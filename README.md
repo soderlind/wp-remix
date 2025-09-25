@@ -27,6 +27,8 @@ All services are orchestrated using **Platformatic Watt Runtime**.
 
 ## Quick Start
 
+> **Current Status**: The Remix frontend application is fully functional with mock WordPress data. The full microservices orchestration with Platformatic Watt is under development.
+
 ### 1. Clone and Setup
 
 ```bash
@@ -57,11 +59,19 @@ npm install
 
 ### 5. Start Development Server
 
+**Option A: Full Stack (Recommended for production):**
 ```bash
 npm run dev
 ```
+*Note: This may require additional Platformatic configuration setup*
 
-The application will be available at `http://localhost:3042`
+**Option B: Remix Frontend Only (Works immediately):**
+```bash
+cd web/remix-app
+npm run dev
+```
+
+The application will be available at `http://localhost:3000`
 
 ## Development Commands
 
@@ -91,7 +101,7 @@ npm run test        # Run tests for all workspaces
 wp-remix/
 ├── design.md                 # Design documentation
 ├── package.json              # Root workspace configuration
-├── watt.json                 # Watt runtime configuration
+├── platformatic.json         # Platformatic runtime configuration
 ├── docker-compose.yml        # MySQL database setup
 ├── .env.example              # Environment variables template
 └── web/                      # Service applications
@@ -151,7 +161,7 @@ wp-remix/
 
 ### Service Configuration
 
-Each service has its own `platformatic.json` configuration file. The main orchestration is configured in the root `watt.json` file.
+Each service has its own `platformatic.json` configuration file. The main orchestration is configured in the root `platformatic.json` file.
 
 ## Production Deployment
 
@@ -189,6 +199,24 @@ npm run db:reset
 - Verify all services are running: `npm run dev`
 - Check service logs in terminal output
 - Ensure environment variables are correctly configured
+
+### Platformatic Configuration Issues
+
+If `npm run dev` fails with "Add a module property to the config":
+
+```bash
+# Alternative: Start Remix app directly
+cd web/remix-app
+npm run dev
+# App will be available at http://localhost:3000
+```
+
+### Security Vulnerabilities
+
+If you see npm audit warnings:
+```bash
+npm audit fix
+```
 
 ### Build Issues
 
