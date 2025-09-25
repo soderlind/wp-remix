@@ -42,6 +42,7 @@ jspm_packages/
 
 # Output of 'npm pack'
 *.tgz
+*.tar.gz
 
 # Yarn Integrity file
 .yarn-integrity
@@ -62,10 +63,14 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
-# Remix build output
-/build
+# Build output directories (anywhere in project)
+build/
+dist/
+out/
+**/build/
+**/dist/
+**/out/
 /public/build
 
 # Gatsby files
