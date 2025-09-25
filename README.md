@@ -30,7 +30,7 @@ All services are orchestrated using **Platformatic Watt Runtime**.
 ### 1. Clone and Setup
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/soderlind/wp-remix
 cd wp-remix
 npm install
 ```
