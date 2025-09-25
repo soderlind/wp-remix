@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { type WordPressPost } from "~/lib/wordpress";
+import { wordpressApi, WordPressApiError } from "~/lib/wordpress-api";
 import { getMockPosts } from "~/lib/mock-wordpress";
 import { PostGrid } from "~/components/wordpress";
 
@@ -13,22 +14,50 @@ export const meta: MetaFunction = () => {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
-    // Use mock data for testing
-    const allPosts = await getMockPosts();
-    const posts = allPosts.slice(0, 6); // Latest 6 posts for homepage
+    // Try to get real WordPress posts first
+    let posts: WordPressPost[] = [];
+    let success = true;
+    let error: string | null = null;
+
+    try {
+      // Check if WordPress API is healthy
+      const healthStatus = await wordpressApi.healthCheck();
+      
+      if (healthStatus.status === 'healthy') {
+        const response = await wordpressApi.getPosts({ 
+          perPage: 6, 
+          orderby: 'date', 
+          order: 'desc',
+          status: 'publish' 
+        });
+        posts = response.data;
+      } else {
+        throw new Error(healthStatus.message);
+      }
+    } catch (wpError) {
+      console.warn("WordPress API unavailable, falling back to mock data:", wpError);
+      
+      // Fall back to mock data
+      const mockPosts = await getMockPosts();
+      posts = mockPosts.slice(0, 6);
+      success = false;
+      error = wpError instanceof WordPressApiError 
+        ? `WordPress API Error: ${wpError.message}`
+        : "WordPress is temporarily unavailable, showing sample content";
+    }
 
     return json({
       posts,
-      success: true,
-      error: null as string | null,
+      success,
+      error,
     });
   } catch (error) {
-    console.error("Error loading posts:", error);
+    console.error("Critical error loading homepage:", error);
     
     return json({
       posts: [],
       success: false,
-      error: error instanceof Error ? error.message : "Failed to load posts",
+      error: error instanceof Error ? error.message : "Failed to load content",
     });
   }
 }

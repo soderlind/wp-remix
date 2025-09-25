@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { type WordPressPost } from "~/lib/wordpress";
+import { wordpressApi, WordPressApiError } from "~/lib/wordpress-api";
 import { getMockPost } from "~/lib/mock-wordpress";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
@@ -34,8 +35,25 @@ export async function loader({ params }: LoaderFunctionArgs) {
   }
 
   try {
-    // Use mock data for testing
-    const post = await getMockPost(slug);
+    let post: WordPressPost | null = null;
+    let success = true;
+
+    try {
+      // Try WordPress API first
+      const healthStatus = await wordpressApi.healthCheck();
+      
+      if (healthStatus.status === 'healthy') {
+        post = await wordpressApi.getPost(slug);
+      } else {
+        throw new Error(healthStatus.message);
+      }
+    } catch (wpError) {
+      console.warn(`WordPress API unavailable for post ${slug}, falling back to mock data:`, wpError);
+      
+      // Fall back to mock data
+      post = await getMockPost(slug);
+      success = false;
+    }
     
     if (!post) {
       throw new Response("Post Not Found", { status: 404 });
@@ -43,13 +61,17 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
     return json({
       post,
-      success: true,
+      success,
     });
   } catch (error) {
     console.error("Error loading post:", error);
     
     if (error instanceof Response) {
       throw error;
+    }
+    
+    if (error instanceof WordPressApiError && error.status === 404) {
+      throw new Response("Post Not Found", { status: 404 });
     }
     
     throw new Response("Internal Server Error", { status: 500 });

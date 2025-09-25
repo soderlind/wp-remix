@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { type WordPressPost } from "~/lib/wordpress";
+import { wordpressApi, WordPressApiError } from "~/lib/wordpress-api";
 import { getMockPosts } from "~/lib/mock-wordpress";
 import { PostGrid } from "~/components/wordpress";
 
@@ -18,29 +19,78 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const perPage = 10;
 
   try {
-    // Use mock data for testing
-    const allPosts = await getMockPosts();
-    // Simulate pagination and search filtering
-    let filteredPosts = allPosts;
-    if (search) {
-      filteredPosts = allPosts.filter(post => 
-        post.title.rendered.toLowerCase().includes(search.toLowerCase()) ||
-        post.content.rendered.toLowerCase().includes(search.toLowerCase())
-      );
+    let posts: WordPressPost[] = [];
+    let success = true;
+    let error: string | null = null;
+    let totalPages = 1;
+    let hasNextPage = false;
+
+    try {
+      // Try WordPress API first
+      const healthStatus = await wordpressApi.healthCheck();
+      
+      if (healthStatus.status === 'healthy') {
+        if (search) {
+          // Use WordPress search endpoint
+          const response = await wordpressApi.search(search, {
+            type: 'post',
+            page,
+            perPage
+          });
+          posts = response.data as WordPressPost[];
+          totalPages = response.totalPages;
+          hasNextPage = page < totalPages;
+        } else {
+          // Get regular posts
+          const response = await wordpressApi.getPosts({
+            page,
+            perPage,
+            orderby: 'date',
+            order: 'desc',
+            status: 'publish'
+          });
+          posts = response.data;
+          totalPages = response.totalPages;
+          hasNextPage = page < totalPages;
+        }
+      } else {
+        throw new Error(healthStatus.message);
+      }
+    } catch (wpError) {
+      console.warn("WordPress API unavailable, falling back to mock data:", wpError);
+      
+      // Fall back to mock data with simulated pagination and search
+      const allPosts = await getMockPosts();
+      let filteredPosts = allPosts;
+      
+      if (search) {
+        filteredPosts = allPosts.filter(post => 
+          post.title.rendered.toLowerCase().includes(search.toLowerCase()) ||
+          post.content.rendered.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+      
+      const startIndex = (page - 1) * perPage;
+      posts = filteredPosts.slice(startIndex, startIndex + perPage);
+      totalPages = Math.ceil(filteredPosts.length / perPage);
+      hasNextPage = page < totalPages;
+      success = false;
+      error = wpError instanceof WordPressApiError 
+        ? `WordPress API Error: ${wpError.message}`
+        : "WordPress is temporarily unavailable, showing sample content";
     }
-    
-    const startIndex = (page - 1) * perPage;
-    const posts = filteredPosts.slice(startIndex, startIndex + perPage);
 
     return json({
       posts,
       currentPage: page,
       search: search || "",
-      success: true,
-      error: null as string | null,
+      success,
+      error,
+      hasNextPage,
+      totalPages,
     });
   } catch (error) {
-    console.error("Error loading posts:", error);
+    console.error("Critical error loading posts:", error);
     
     return json({
       posts: [],
@@ -48,12 +98,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
       search: search || "",
       success: false,
       error: error instanceof Error ? error.message : "Failed to load posts",
+      hasNextPage: false,
+      totalPages: 1,
     });
   }
 }
 
 export default function PostsPage() {
-  const { posts, currentPage, search, success, error } = useLoaderData<typeof loader>();
+  const { posts, currentPage, search, success, error, hasNextPage } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
 
   return (
@@ -127,7 +179,7 @@ export default function PostsPage() {
               </div>
 
               {/* Pagination */}
-              <Pagination currentPage={currentPage} hasNextPage={posts.length === 10} />
+              <Pagination currentPage={currentPage} hasNextPage={hasNextPage} />
             </>
           )}
         </div>
