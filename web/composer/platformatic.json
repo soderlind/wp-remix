@@ -1,0 +1,35 @@
+{
+	"module": "@platformatic/composer",
+	"server": {
+		"hostname": "127.0.0.1",
+		"port": "{PORT}"
+	},
+	"composer": {
+		"services": [
+			{
+				"id": "wp",
+				"proxy": {
+					"prefix": "/wp",
+					"upstreams": [
+						{
+							"origin": "http://wp.plt.local"
+						}
+					]
+				}
+			}
+		],
+		"refreshTimeout": 1000
+	},
+	"plugins": {
+		"paths": [
+			"./plugins"
+		]
+	},
+	"watch": {
+		"enabled": true,
+		"ignore": [
+			"node_modules/**",
+			"dist/**"
+		]
+	}
+}

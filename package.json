@@ -1,0 +1,41 @@
+{
+	"name": "wp-remix",
+	"version": "1.0.0",
+	"description": "Watt WordPress Remix App - A microservices application with Remix frontend and WordPress backend",
+	"type": "module",
+	"workspaces": [
+		"web/*"
+	],
+	"scripts": {
+		"start": "wattpm start",
+		"dev": "wattpm dev",
+		"build": "npm run build --workspaces --if-present",
+		"test": "npm run test --workspaces --if-present",
+		"lint": "npm run lint --workspaces --if-present",
+		"clean": "npm run clean --workspaces --if-present",
+		"db:setup": "docker-compose up -d",
+		"db:down": "docker-compose down",
+		"db:reset": "docker-compose down -v && docker-compose up -d"
+	},
+	"engines": {
+		"node": ">=22.14.0"
+	},
+	"devDependencies": {
+		"wattpm": "^3.6.0",
+		"typescript": "^5.7.2"
+	},
+	"keywords": [
+		"platformatic",
+		"watt",
+		"remix",
+		"wordpress",
+		"microservices",
+		"typescript"
+	],
+	"author": "",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": ""
+	}
+}

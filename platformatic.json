@@ -1,0 +1,33 @@
+{
+	"applications": [
+		{
+			"id": "remix-app",
+			"path": "./web/remix-app",
+			"config": "platformatic.json"
+		},
+		{
+			"id": "wp",
+			"path": "./web/wp",
+			"config": "platformatic.json"
+		},
+		{
+			"id": "composer",
+			"path": "./web/composer",
+			"config": "platformatic.json"
+		}
+	],
+	"entrypoint": "remix-app",
+	"web": {
+		"hostname": "127.0.0.1",
+		"port": "{PORT}"
+	},
+	"watch": {
+		"enabled": true,
+		"ignore": [
+			"node_modules/**",
+			"dist/**",
+			"build/**",
+			".git/**"
+		]
+	}
+}
